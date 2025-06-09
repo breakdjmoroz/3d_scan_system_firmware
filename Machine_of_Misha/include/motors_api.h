@@ -1,6 +1,9 @@
 #ifndef MOTORS_API
 #define MOTORS_API
 
+// Microseconds in second
+#define USEC_IN_SEC       (1e6)
+
 // Frequency of the motor's motion, Hz
 #define MAX_FREQUENCY     (200000)
 

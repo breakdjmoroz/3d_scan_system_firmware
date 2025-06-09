@@ -16,13 +16,13 @@
 Motor motor_0 = {MOTOR_0_ENA_PIN, MOTOR_0_DIR_PIN, MOTOR_0_PUL_PIN};
 Motor motor_1 = {MOTOR_1_ENA_PIN, MOTOR_1_DIR_PIN, MOTOR_1_PUL_PIN};
 
-// Frequency of motors in % from max
+// Frequency of motors in % from max (range from 1 to 80)
 #define FREQUENCY_0       (10)
-#define FREQUENCY_1       (20)
+#define FREQUENCY_1       (60)
 
 // Timer's threshold in us
-#define THRESHOLD_0       (100)
-#define THRESHOLD_1       ((MAX_FREQUENCY / 100) * FREQUENCY_1)
+#define THRESHOLD_0       ((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * FREQUENCY_0))
+#define THRESHOLD_1       ((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * FREQUENCY_1))
 
 // Timer's variables to make multitasking
 uint32_t timer;
@@ -54,7 +54,7 @@ uint32_t motor_1_step = 0;
 
 void loop()
 {
-  #if 1
+  #if 0
   // Move the motor
   if (micros() - timer0 >= THRESHOLD_0)
   {
@@ -70,10 +70,10 @@ void loop()
   }
   #endif
 
-  #if 0
+  #if 1
   if (micros() - timer1 >= THRESHOLD_1)
   {
-    if (motor_1_step > 10000)
+    if (motor_1_step > 50000)
     {
       motor_1_step = 0;
       motor_1.inverse_dir();
