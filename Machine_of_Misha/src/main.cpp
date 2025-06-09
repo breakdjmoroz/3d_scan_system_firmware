@@ -1,17 +1,6 @@
 #include <Arduino.h>
 
-// Microseconds in second
-#define USEC_IN_SEC       (1e6)
-
-// Enable the motor constant
-#define ENABLE_MOTOR      (1)
-// Disable the motor constant
-#define DISABLE_MOTOR     (0)
-
-// Define high level for pulse
-#define PULSE_HIGH        (1)
-// Define low level for pulse
-#define PULSE_LOW         (0)
+#include "motors_api.h"
 
 // Responsible for the motor's motion
 #define MOTOR_0_PUL_PIN   (13)
@@ -24,22 +13,20 @@
 #define MOTOR_1_DIR_PIN   (9)
 #define MOTOR_1_ENA_PIN   (8)
 
-// Frequency of the motor's motion, Hz
-#define MOTOR_0_FREQUENCY (1000)
-// Period of one impulse of the PUL signal, us
-#define MOTOR_0_PERIOD    (USEC_IN_SEC / MOTOR_0_FREQUENCY)
+Motor motor_0 = {MOTOR_0_ENA_PIN, MOTOR_0_DIR_PIN, MOTOR_0_PUL_PIN};
+Motor motor_1 = {MOTOR_1_ENA_PIN, MOTOR_1_DIR_PIN, MOTOR_1_PUL_PIN};
 
-#define MOTOR_1_FREQUENCY (10000)
-#define MOTOR_1_PERIOD    (USEC_IN_SEC / MOTOR_1_FREQUENCY)
+// Timer's threshold in us
+#define THRESHOLD_0 (5000)
+#define THRESHOLD_1 (200)
 
-// An interval, while waiting of setting up new signal, us
-#define WAIT_INTERVAL     (5)
+// Timer's variables to make multitasking
+uint32_t timer;
+uint32_t timer0;
+uint32_t timer1;
 
-#define STEP_IN_ONE_DIR   (10000)
-
-bool motor_0_dir = false;
-
-void move_motor(size_t motor_pul_pin, size_t period);
+bool motor_0_dir = DIR_FORWARD;
+bool motor_1_dir = DIR_FORWARD;
 
 void setup()
 {
@@ -55,37 +42,46 @@ void setup()
   // Enable motors
   digitalWrite(MOTOR_0_ENA_PIN, ENABLE_MOTOR);
   digitalWrite(MOTOR_1_ENA_PIN, ENABLE_MOTOR);
+
+  motor_0.set_dir(DIR_FORWARD);
+  motor_1.set_dir(DIR_FORWARD);
 }
+
+uint32_t motor_0_step = 0;
+uint32_t motor_1_step = 0;
 
 void loop()
 {
-  // Wait before setting up new signal (according to docs)
-  delayMicroseconds(WAIT_INTERVAL);
-
-  // Set direction of the motor's motion
-  digitalWrite(MOTOR_0_DIR_PIN, motor_0_dir);
-  digitalWrite(MOTOR_1_DIR_PIN, motor_0_dir);
-
-  delayMicroseconds(WAIT_INTERVAL);
-
+  #if 1
   // Move the motor
-  for (size_t i = 0; i < STEP_IN_ONE_DIR; ++i)
+  if (micros() - timer0 >= THRESHOLD_0)
   {
-    move_motor(MOTOR_0_PUL_PIN, MOTOR_0_PERIOD);
+    if (motor_0_step > 1000)
+    {
+      motor_0_step = 0;
+      motor_0_dir = !motor_0_dir;
+      motor_0.set_dir(motor_0_dir);
+    }
+
+    timer0 = micros();
+    motor_0.step();
+    ++motor_0_step;
   }
+  #endif
 
-  motor_0_dir = !motor_0_dir;
-}
+  #if 0
+  if (micros() - timer1 >= THRESHOLD_1)
+  {
+    if (motor_1_step > 10000)
+    {
+      motor_1_step = 0;
+      motor_1.set_dir(motor_1_dir);
+    }
 
-void move_motor(size_t motor_pul_pin, size_t period)
-{
-    // Create impulses on PUL pin to move the motor
-    digitalWrite(motor_pul_pin, PULSE_HIGH);
+    timer1 = micros();
+    motor_1.step();
+    ++motor_1_step;
+  }
+  #endif
 
-    // Wait a half of period
-    delayMicroseconds((uint32_t)(period / 2));
-
-    digitalWrite(motor_pul_pin, PULSE_LOW);
-
-    delayMicroseconds((uint32_t)(period / 2));
 }
