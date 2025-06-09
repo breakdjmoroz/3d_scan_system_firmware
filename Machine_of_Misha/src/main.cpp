@@ -16,9 +16,13 @@
 Motor motor_0 = {MOTOR_0_ENA_PIN, MOTOR_0_DIR_PIN, MOTOR_0_PUL_PIN};
 Motor motor_1 = {MOTOR_1_ENA_PIN, MOTOR_1_DIR_PIN, MOTOR_1_PUL_PIN};
 
+// Frequency of motors in % from max
+#define FREQUENCY_0       (10)
+#define FREQUENCY_1       (20)
+
 // Timer's threshold in us
-#define THRESHOLD_0 (5000)
-#define THRESHOLD_1 (200)
+#define THRESHOLD_0       (100)
+#define THRESHOLD_1       ((MAX_FREQUENCY / 100) * FREQUENCY_1)
 
 // Timer's variables to make multitasking
 uint32_t timer;
@@ -61,8 +65,8 @@ void loop()
     }
 
     timer0 = micros();
-    motor_0.step();
     ++motor_0_step;
+    motor_0.step();
   }
   #endif
 
