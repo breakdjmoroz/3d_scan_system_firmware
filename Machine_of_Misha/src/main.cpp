@@ -25,9 +25,6 @@ uint32_t timer;
 uint32_t timer0;
 uint32_t timer1;
 
-bool motor_0_dir = DIR_FORWARD;
-bool motor_1_dir = DIR_FORWARD;
-
 void setup()
 {
   // Setting up pins to output mode
@@ -40,11 +37,12 @@ void setup()
   pinMode(MOTOR_1_ENA_PIN, OUTPUT);
 
   // Enable motors
-  digitalWrite(MOTOR_0_ENA_PIN, ENABLE_MOTOR);
-  digitalWrite(MOTOR_1_ENA_PIN, ENABLE_MOTOR);
+  motor_0.enable();
+  motor_1.enable();
 
-  motor_0.set_dir(DIR_FORWARD);
-  motor_1.set_dir(DIR_FORWARD);
+  // Set primary motors direction
+  motor_0.forward_dir();
+  motor_1.forward_dir();
 }
 
 uint32_t motor_0_step = 0;
@@ -59,8 +57,7 @@ void loop()
     if (motor_0_step > 1000)
     {
       motor_0_step = 0;
-      motor_0_dir = !motor_0_dir;
-      motor_0.set_dir(motor_0_dir);
+      motor_0.inverse_dir();
     }
 
     timer0 = micros();
@@ -75,7 +72,7 @@ void loop()
     if (motor_1_step > 10000)
     {
       motor_1_step = 0;
-      motor_1.set_dir(motor_1_dir);
+      motor_1.inverse_dir();
     }
 
     timer1 = micros();
