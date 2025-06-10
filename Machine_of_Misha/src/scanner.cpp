@@ -76,8 +76,26 @@ void Scanner::init()
   // Setting up button pins mode
   pinMode(_x_stop_pin, INPUT_PULLUP);
   pinMode(_z_stop_pin, INPUT_PULLUP);
+  
+  move_to_zero();
+}
 
-  #if 1
+void Scanner::chose_dir(int32_t &coordinate, Axis axis)
+{
+    // Chose direction of rotation
+    if (coordinate < 0)
+    {
+      coordinate = -coordinate;
+      axis._motor.counterclockwise_dir();
+    }
+    else if (coordinate > 0)
+    {
+      axis._motor.clockwise_dir();
+    }
+}
+
+void Scanner::move_to_zero()
+{
   // Attach interrupts
   // Pin - 2 = number of interrupt channel
   attachInterrupt(_x_stop_pin - 2, _x_stop_handler, FALLING);
@@ -91,11 +109,11 @@ void Scanner::init()
   {
     if (_is_x_stop)
     {
-      _is_x_stop = false;
       is_x_in_zero = true;
 
       // Disabling interrupts
       detachInterrupt(_x_stop_pin - 2);
+      _is_x_stop = false;
 
       // Stop hold the button
       move(10, 0);
@@ -103,11 +121,11 @@ void Scanner::init()
 
     if (_is_z_stop)
     {
-      _is_z_stop = false;
       is_z_in_zero = true;
 
       // Disabling interrupts
       detachInterrupt(_z_stop_pin - 2);
+      _is_z_stop = false;
 
       // Stop hold the button
       move(0, 10);
@@ -130,19 +148,4 @@ void Scanner::init()
       move(-1, 0);
     }
   }
-  #endif
-}
-
-void Scanner::chose_dir(int32_t &coordinate, Axis axis)
-{
-    // Chose direction of rotation
-    if (coordinate < 0)
-    {
-      coordinate = -coordinate;
-      axis._motor.counterclockwise_dir();
-    }
-    else if (coordinate > 0)
-    {
-      axis._motor.clockwise_dir();
-    }
 }

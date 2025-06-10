@@ -19,11 +19,24 @@ Motor z_motor = {MOTOR_1_ENA_PIN, MOTOR_1_DIR_PIN, MOTOR_1_PUL_PIN, STEP_32};
 
 Scanner scanner = {x_motor, z_motor, MOTOR_0_STOP_BUTTON_PIN, MOTOR_1_STOP_BUTTON_PIN};
 
+size_t iterations = 2;
+bool is_running = true;
+
 void setup()
 {
   scanner.init();
 
-  scanner.move(500, 500);
+  scanner.move(100, 100);
+
+  while (iterations--)
+  {
+    scanner.move(10, 0);
+    scanner.move(0, 10);
+    scanner.move(-10, 0);
+    scanner.move(0, -10);
+  }
+
+  scanner.move_to_zero();
 }
 
 void loop()

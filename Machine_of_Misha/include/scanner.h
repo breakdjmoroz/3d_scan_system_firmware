@@ -12,6 +12,7 @@ public:
 
     void init();
     void move(int32_t x, int32_t z);
+    void move_to_zero();
 private:
     class Axis
     {
