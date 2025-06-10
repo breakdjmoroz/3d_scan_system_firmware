@@ -2,12 +2,6 @@
 
 #include "motors_api.h"
 
-// Microseconds in second
-#define USEC_IN_SEC       (1e6)
-
-// Frequency of the motor's motion, Hz
-#define MAX_FREQUENCY     (200000)
-
 // An interval, while waiting of setting up new signal, us
 #define WAIT_INTERVAL           (5)
 

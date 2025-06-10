@@ -8,23 +8,24 @@
 class Scanner
 {
 public:
-    Scanner();
+    Scanner(Motor x_motor, Motor z_motor);
 
-    void move(int x, int z);
+    void init();
+    void move(int32_t x, int32_t z);
 private:
     class Axis
     {
     public:
-        Axis(Motor motor, size_t mm_in_full_rotation):
-        _motor(motor),
-        _MM_IN_FULL_ROTATION(mm_in_full_rotation) {};
+        Axis(Motor motor);
 
         const size_t _MM_IN_FULL_ROTATION;
         Motor _motor;
     };
 
-    Axis x_axis;
-    Axis z_axis;
+    Axis _x_axis;
+    Axis _z_axis;
+
+    void chose_dir(int32_t &coordinate, Axis axis);
 };
 
 #endif
