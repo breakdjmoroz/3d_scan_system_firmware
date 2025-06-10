@@ -2,30 +2,51 @@
 
 #include "motors_api.h"
 
+// Microseconds in second
+#define USEC_IN_SEC       (1e6)
+
+// Frequency of the motor's motion, Hz
+#define MAX_FREQUENCY     (200000)
+
 // An interval, while waiting of setting up new signal, us
-#define WAIT_INTERVAL     (5)
+#define WAIT_INTERVAL           (5)
 
 // Period of one impulse of the PUL signal, us
-#define PERIOD            (USEC_IN_SEC / MAX_FREQUENCY)
+#define PERIOD                  (USEC_IN_SEC / MAX_FREQUENCY)
 
 // Enable the motor constant
-#define ENABLE_MOTOR      (1)
+#define ENABLE_MOTOR            (1)
 // Disable the motor constant
-#define DISABLE_MOTOR     (0)
+#define DISABLE_MOTOR           (0)
 
 // Define high level for pulse
-#define PULSE_HIGH        (1)
+#define PULSE_HIGH              (1)
 // Define low level for pulse
-#define PULSE_LOW         (0)
+#define PULSE_LOW               (0)
 
 // Define forward motor's direction
-#define DIR_FORWARD       (true)
+#define DIR_CLOCKWISE           (0)
 // Define reverse motor's direction
-#define DIR_REVERSE       (false)
+#define DIR_COUNTERCLOCKWISE    (1)
 
-Motor::Motor(size_t ena_pin, size_t dir_pin, size_t pul_pin):
+Motor::Motor(size_t ena_pin, size_t dir_pin, size_t pul_pin, STEP_MODE step_mode):
         _ena_pin(ena_pin), _dir_pin(dir_pin),
-        _pul_pin(pul_pin), _direction(DIR_FORWARD) {};
+        _pul_pin(pul_pin), _direction(DIR_CLOCKWISE),
+        _STEP_MODE(step_mode) {};
+
+void Motor::set_up()
+{
+    // Setting up pins to output mode
+    pinMode(_ena_pin, OUTPUT);
+    pinMode(_dir_pin, OUTPUT);
+    pinMode(_pul_pin, OUTPUT);
+
+    // Enable the motor
+    enable();
+
+    // Set primary direction of the motor
+    clockwise_dir();
+}
 
 void Motor::enable()
 {
@@ -65,17 +86,17 @@ void Motor::set_dir()
     delayMicroseconds(WAIT_INTERVAL);
 }
 
-void Motor::forward_dir()
+void Motor::clockwise_dir()
 {
-    // Setting up forward direction of the motor's step
-    _direction = DIR_FORWARD;
+    // Setting up clockwise direction of the motor's step
+    _direction = DIR_CLOCKWISE;
     set_dir();
 }
 
-void Motor::reverse_dir()
+void Motor::counterclockwise_dir()
 {
-    // Setting up reverse direction of the motor's step
-    _direction = DIR_REVERSE;
+    // Setting up counterclockwise direction of the motor's step
+    _direction = DIR_COUNTERCLOCKWISE;
     set_dir();
 }
 
@@ -84,4 +105,13 @@ void Motor::inverse_dir()
     // Invert direction of the motor's step
     _direction = !_direction;
     set_dir();
+}
+
+void Motor::rotate(size_t steps)
+{
+    while (steps--)
+    {
+        step();
+        delayMicroseconds(((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * 60)));
+    }
 }

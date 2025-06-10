@@ -2,86 +2,54 @@
 
 #include "motors_api.h"
 
-// Responsible for the motor's motion
-#define MOTOR_0_PUL_PIN   (13)
-// Responsible for direction of the motor's motion
-#define MOTOR_0_DIR_PIN   (12)
-// Responsible for enabling the motor
-#define MOTOR_0_ENA_PIN   (11)
+#define MOTOR_0_PUL_PIN   (13)  // Responsible for the motor's motion
+#define MOTOR_0_DIR_PIN   (12)  // Responsible for direction of the motor's motion
+#define MOTOR_0_ENA_PIN   (11)  // Responsible for enabling the motor
 
 #define MOTOR_1_PUL_PIN   (10)
 #define MOTOR_1_DIR_PIN   (9)
 #define MOTOR_1_ENA_PIN   (8)
 
-Motor motor_0 = {MOTOR_0_ENA_PIN, MOTOR_0_DIR_PIN, MOTOR_0_PUL_PIN};
-Motor motor_1 = {MOTOR_1_ENA_PIN, MOTOR_1_DIR_PIN, MOTOR_1_PUL_PIN};
-
-// Frequency of motors in % from max (range from 1 to 80)
-#define FREQUENCY_0       (10)
-#define FREQUENCY_1       (60)
-
 // Timer's threshold in us
-#define THRESHOLD_0       ((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * FREQUENCY_0))
-#define THRESHOLD_1       ((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * FREQUENCY_1))
+#define THRESHOLD_0       (1)
+#define THRESHOLD_1       (1)
 
 // Timer's variables to make multitasking
 uint32_t timer;
 uint32_t timer0;
 uint32_t timer1;
 
+Motor motor_0 = {MOTOR_0_ENA_PIN, MOTOR_0_DIR_PIN, MOTOR_0_PUL_PIN, STEP_32};
+Motor motor_1 = {MOTOR_1_ENA_PIN, MOTOR_1_DIR_PIN, MOTOR_1_PUL_PIN, STEP_32};
+
 void setup()
 {
-  // Setting up pins to output mode
-  pinMode(MOTOR_0_PUL_PIN, OUTPUT);
-  pinMode(MOTOR_0_DIR_PIN, OUTPUT);
-  pinMode(MOTOR_0_ENA_PIN, OUTPUT);
+  // Setting up motors
+  motor_0.set_up();
+  motor_1.set_up();
 
-  pinMode(MOTOR_1_PUL_PIN, OUTPUT);
-  pinMode(MOTOR_1_DIR_PIN, OUTPUT);
-  pinMode(MOTOR_1_ENA_PIN, OUTPUT);
-
-  // Enable motors
-  motor_0.enable();
-  motor_1.enable();
-
-  // Set primary motors direction
-  motor_0.forward_dir();
-  motor_1.forward_dir();
+  motor_1.counterclockwise_dir();
 }
 
 uint32_t motor_0_step = 0;
 uint32_t motor_1_step = 0;
 
+bool is_running = true;
+
 void loop()
 {
-  #if 0
-  // Move the motor
-  if (micros() - timer0 >= THRESHOLD_0)
-  {
-    if (motor_0_step > 1000)
-    {
-      motor_0_step = 0;
-      motor_0.inverse_dir();
-    }
+  #if 1
 
-    timer0 = micros();
-    ++motor_0_step;
-    motor_0.step();
-  }
+  motor_1.rotate(6400);
+
   #endif
 
   #if 1
-  if (micros() - timer1 >= THRESHOLD_1)
+  if ((micros() - timer1 >= THRESHOLD_1) && is_running)
   {
-    if (motor_1_step > 50000)
-    {
-      motor_1_step = 0;
-      motor_1.inverse_dir();
-    }
-
-    timer1 = micros();
-    motor_1.step();
-    ++motor_1_step;
+    //motor_1.rotate(64000);
+    motor_0.disable();
+    is_running = false;
   }
   #endif
 
