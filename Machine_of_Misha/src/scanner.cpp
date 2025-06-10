@@ -5,11 +5,29 @@
 // Distance, that the axis has passed after full rotation of the motor, mm
 #define MM_IN_FULL_ROTATION (10)
 
+volatile bool _is_x_stop = false;
+volatile bool _is_z_stop = false;
+
+void _x_stop_handler()
+{
+  noInterrupts();
+  _is_x_stop = true;
+  interrupts();
+}
+
+void _z_stop_handler()
+{
+  noInterrupts();
+  _is_z_stop = true;
+  interrupts();
+}
+
 Scanner::Axis::Axis(Motor motor):
     _motor(motor),
     _MM_IN_FULL_ROTATION(MM_IN_FULL_ROTATION) {};
 
-Scanner::Scanner(Motor x_motor, Motor z_motor) :
+Scanner::Scanner(Motor x_motor, Motor z_motor, size_t x_stop_pin, size_t z_stop_pin) :
+  _x_stop_pin(x_stop_pin), _z_stop_pin(z_stop_pin),
   _x_axis(Axis(x_motor)), _z_axis(Axis(z_motor)){};
 
 void Scanner::move(int32_t x, int32_t z)
@@ -54,6 +72,65 @@ void Scanner::init()
   // Setting motors up
   _x_axis._motor.set_up();
   _z_axis._motor.set_up();
+
+  // Setting up button pins mode
+  pinMode(_x_stop_pin, INPUT_PULLUP);
+  pinMode(_z_stop_pin, INPUT_PULLUP);
+
+  #if 1
+  // Attach interrupts
+  // Pin - 2 = number of interrupt channel
+  attachInterrupt(_x_stop_pin - 2, _x_stop_handler, FALLING);
+  attachInterrupt(_z_stop_pin - 2, _z_stop_handler, FALLING);
+
+  bool in_zero = false;
+  bool is_x_in_zero = false;
+  bool is_z_in_zero = false;
+
+  while (!in_zero)
+  {
+    if (_is_x_stop)
+    {
+      _is_x_stop = false;
+      is_x_in_zero = true;
+
+      // Disabling interrupts
+      detachInterrupt(_x_stop_pin - 2);
+
+      // Stop hold the button
+      move(10, 0);
+    }
+
+    if (_is_z_stop)
+    {
+      _is_z_stop = false;
+      is_z_in_zero = true;
+
+      // Disabling interrupts
+      detachInterrupt(_z_stop_pin - 2);
+
+      // Stop hold the button
+      move(0, 10);
+    }
+
+    if (is_x_in_zero && is_z_in_zero)
+    {
+      in_zero = true;
+    }
+    else if (!is_x_in_zero && !is_z_in_zero)
+    {
+      move(-1, -1);
+    }
+    else if (is_x_in_zero)
+    {
+      move(0, -1);
+    }
+    else
+    {
+      move(-1, 0);
+    }
+  }
+  #endif
 }
 
 void Scanner::chose_dir(int32_t &coordinate, Axis axis)
