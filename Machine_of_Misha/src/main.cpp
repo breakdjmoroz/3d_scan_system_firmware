@@ -26,14 +26,14 @@ void setup()
 {
   scanner.init();
 
-  scanner.move(100, 100);
+  scanner.move(40, 40);
 
   while (iterations--)
   {
-    scanner.move(10, 0);
-    scanner.move(0, 10);
-    scanner.move(-10, 0);
-    scanner.move(0, -10);
+    scanner.move(15, 0);
+    scanner.move(0, 15);
+    scanner.move(-15, 0);
+    scanner.move(0, -15);
   }
 
   scanner.move_to_zero();

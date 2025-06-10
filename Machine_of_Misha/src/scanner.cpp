@@ -76,6 +76,11 @@ void Scanner::init()
   // Setting up button pins mode
   pinMode(_x_stop_pin, INPUT_PULLUP);
   pinMode(_z_stop_pin, INPUT_PULLUP);
+
+  // Attach interrupts
+  // Pin - 2 = number of interrupt channel
+  attachInterrupt(_x_stop_pin - 2, _x_stop_handler, FALLING);
+  attachInterrupt(_z_stop_pin - 2, _z_stop_handler, FALLING);
   
   move_to_zero();
 }
@@ -96,56 +101,58 @@ void Scanner::chose_dir(int32_t &coordinate, Axis axis)
 
 void Scanner::move_to_zero()
 {
-  // Attach interrupts
-  // Pin - 2 = number of interrupt channel
-  attachInterrupt(_x_stop_pin - 2, _x_stop_handler, FALLING);
-  attachInterrupt(_z_stop_pin - 2, _z_stop_handler, FALLING);
-
+  // Both coordinates in their inital positions
   bool in_zero = false;
+
+  // X in it's initial position
   bool is_x_in_zero = false;
+  // Z in it's initial position
   bool is_z_in_zero = false;
 
   while (!in_zero)
   {
-    if (_is_x_stop)
+    // If button pushed down and it is first entering
+    if (_is_x_stop && !is_x_in_zero)
     {
+      // Coordinate in it's initial position
       is_x_in_zero = true;
-
-      // Disabling interrupts
-      detachInterrupt(_x_stop_pin - 2);
-      _is_x_stop = false;
 
       // Stop hold the button
       move(10, 0);
     }
 
-    if (_is_z_stop)
+    if (_is_z_stop && !is_z_in_zero)
     {
       is_z_in_zero = true;
 
-      // Disabling interrupts
-      detachInterrupt(_z_stop_pin - 2);
-      _is_z_stop = false;
-
-      // Stop hold the button
       move(0, 10);
     }
 
+    // If both coordinates in initial position
     if (is_x_in_zero && is_z_in_zero)
     {
+      // Set the corresponding flag
       in_zero = true;
+
+      // Clear flags for button pushing
+      _is_x_stop = false;
+      _is_z_stop = false;
     }
     else if (!is_x_in_zero && !is_z_in_zero)
     {
+      // Go to zero changing both coordinates
       move(-1, -1);
     }
     else if (is_x_in_zero)
     {
+      // Go to zero changing z, because x already in zero
       move(0, -1);
     }
     else
     {
+      // Go to zero changing x, because z already in zero
       move(-1, 0);
     }
   }
+
 }
