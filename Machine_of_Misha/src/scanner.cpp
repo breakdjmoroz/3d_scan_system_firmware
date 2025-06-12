@@ -31,10 +31,73 @@ Scanner::Axis::Axis(Motor motor):
     _motor(motor),
     _STEPS_IN_MM(motor._STEPS_IN_FULL_ROTATION / MM_IN_FULL_ROTATION) {};
 
+void Scanner::Axis::init()
+{
+  // Enable and set up motor
+  _motor.enable();
+  _motor.set_up();
+}
+
+void Scanner::Axis::move()
+{
+  _motor.step();
+}
+
+uint32_t Scanner::Axis::distance_to_steps(int32_t distance)
+{
+    // Convert coordinates into steps
+    return abs(distance) * _STEPS_IN_MM;
+}
+
+void Scanner::Axis::choose_direction(int32_t coordinate)
+{
+  // Chose direction of rotation
+  if (coordinate < 0)
+  {
+    _motor.counterclockwise_dir();
+  }
+  else if (coordinate > 0)
+  {
+    _motor.clockwise_dir();
+  }
+}
+
 Scanner::Rotor::Rotor(Motor motor):
     _motor(motor),
     _STEPS_IN_DEGREE(motor._STEPS_IN_FULL_ROTATION / DEGREE_IN_FULL_ROTATION),
     _accumulated_rotation(0) {};
+
+void Scanner::Rotor::init()
+{
+  // Enable and set up motor
+  _motor.enable();
+  _motor.set_up();
+}
+
+void Scanner::Rotor::move()
+{
+  _motor.step();
+}
+
+uint32_t Scanner::Rotor::distance_to_steps(int32_t distance)
+{
+    // Convert coordinates into steps
+    /* TODO: remove magic numbers!!! */
+    return abs(distance) * 33152 / 128;
+}
+
+void Scanner::Rotor::choose_direction(int32_t coordinate)
+{
+  // Chose direction of rotation
+  if (coordinate < 0)
+  {
+    _motor.counterclockwise_dir();
+  }
+  else if (coordinate > 0)
+  {
+    _motor.clockwise_dir();
+  }
+}
 
 Scanner::Scanner(Motor x_motor, Motor z_motor, Motor scanner_motor, Motor table_motor,
   size_t x_stop_pin, size_t z_stop_pin) :
@@ -42,120 +105,13 @@ Scanner::Scanner(Motor x_motor, Motor z_motor, Motor scanner_motor, Motor table_
   _x_axis(Axis(x_motor)), _z_axis(Axis(z_motor)),
   _scanner_rotor(Rotor(scanner_motor)), _table_rotor(Rotor(table_motor)) {};
 
-void Scanner::move(int32_t x, int32_t z)
-{
-    // Time between steps. Influence on speed
-    const size_t PERIOD = ((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * 60));
-
-    uint32_t x_timer;
-    uint32_t z_timer;
-
-    // Chose direction
-    chose_dir(x, _x_axis._motor);
-    chose_dir(z, _z_axis._motor);
-
-    // Convert coordinates into steps
-    uint32_t x_steps = x * _x_axis._STEPS_IN_MM;
-    uint32_t z_steps = z * _z_axis._STEPS_IN_MM;
-
-    while (x_steps || z_steps)
-    {
-      // Move scanner
-      if ((micros() - x_timer >= PERIOD) && x_steps)
-      {
-        _x_axis._motor.step();
-        --x_steps;
-        x_timer = micros();
-      }
-      if ((micros() - z_timer >= PERIOD) && z_steps)
-      {
-        _z_axis._motor.step();
-        --z_steps;
-        z_timer = micros();
-      }
-    }
-}
-
-void Scanner::rotate(int32_t degree)
-{
-    // Accumulate rotations to return to zero position
-    _scanner_rotor._accumulated_rotation += degree;
-    // The same as move function
-    const size_t PERIOD = ((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * 20));
-
-    uint32_t timer;
-
-    chose_dir(degree, _scanner_rotor._motor);
-
-    /* TODO: remove magic numbers!!! */
-    uint32_t steps = degree * 33152;
-
-    while (steps--)
-    {
-      if ((micros() - timer >= PERIOD) && steps)
-      {
-        _scanner_rotor._motor.step();
-        timer = micros();
-      }
-    }
-}
-
-void Scanner::move_and_rotate(int32_t x, int32_t z, int32_t degree)
-{
-    _scanner_rotor._accumulated_rotation += degree;
-
-    // The same as move function
-    const size_t PERIOD = ((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * 60));
-
-    uint32_t x_timer;
-    uint32_t z_timer;
-    uint32_t degree_timer;
-
-    chose_dir(x, _x_axis._motor);
-    chose_dir(z, _z_axis._motor);
-    chose_dir(degree, _scanner_rotor._motor);
-
-    uint32_t x_steps = x * _x_axis._STEPS_IN_MM;
-    uint32_t z_steps = z * _z_axis._STEPS_IN_MM;
-    /* TODO: remove all magic numbers!!!*/
-    uint32_t degree_steps = degree * 33152;
-
-    while (x_steps || z_steps || degree_steps)
-    {
-      if ((micros() - x_timer >= PERIOD) && x_steps)
-      {
-        _x_axis._motor.step();
-        --x_steps;
-        x_timer = micros();
-      }
-      if ((micros() - z_timer >= PERIOD) && z_steps)
-      {
-        _z_axis._motor.step();
-        --z_steps;
-        z_timer = micros();
-      }
-      if ((micros() - degree_timer >= PERIOD) && degree_steps)
-      {
-        _scanner_rotor._motor.step();
-        --degree_steps;
-        degree_timer = micros();
-      }
-    }
-}
-
 void Scanner::init()
 {
   // Enable motors
-  _x_axis._motor.enable();
-  _z_axis._motor.enable();
-  _scanner_rotor._motor.enable();
-  _table_rotor._motor.enable();
-
-  // Setting motors up
-  _x_axis._motor.set_up();
-  _z_axis._motor.set_up();
-  _scanner_rotor._motor.set_up();
-  _table_rotor._motor.set_up();
+  _x_axis.init();
+  _z_axis.init();
+  _scanner_rotor.init();
+  _table_rotor.init();
 
   // Setting up button pins mode
   pinMode(_x_stop_pin, INPUT_PULLUP);
@@ -166,22 +122,93 @@ void Scanner::init()
   attachInterrupt(digitalPinToInterrupt(_x_stop_pin), _x_stop_handler, FALLING);
   attachInterrupt(digitalPinToInterrupt(_z_stop_pin), _z_stop_handler, FALLING);
   
-  rotate_to_zero();
   move_to_zero();
+  #if DEPRECATED
+  rotate_to_zero();
+  #endif
 }
 
-void Scanner::chose_dir(int32_t &coordinate, Motor motor)
+void Scanner::parallel_move(Motorized* motors[], int32_t distanses[], size_t motors_number)
 {
-    // Chose direction of rotation
-    if (coordinate < 0)
+  // Selecting direction for each motor
+  for (size_t i = 0; i < motors_number; ++i)
+  {
+    motors[i]->choose_direction(distanses[i]);
+  }
+
+  // Converting each distance to steps
+  uint32_t steps[motors_number] = {};
+  for (size_t i = 0; i < motors_number; ++i)
+  {
+    steps[i] = motors[i]->distance_to_steps(distanses[i]);
+  }
+
+  // Time between steps. Influence on speed
+  const size_t PERIOD = ((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * 60));
+
+  // Timers to speed control
+  uint32_t timers[motors_number] = {};
+
+  // Moving flag
+  bool is_moving = true;
+
+  while(is_moving)
+  {
+    // Clear flag
+    is_moving = false;
+
+    for (size_t i = 0; i < motors_number; ++i)
     {
-      coordinate = -coordinate;
-      motor.counterclockwise_dir();
+      // Move motors
+      if ((micros() - timers[i] >= PERIOD) && steps[i])
+      {
+        motors[i]->move();
+
+        --steps[i];
+
+        timers[i] = micros();
+      }
+
+      // If there are any steps, continue to move
+      is_moving = is_moving || steps[i] > 0;
     }
-    else if (coordinate > 0)
-    {
-      motor.clockwise_dir();
-    }
+  }
+}
+
+void Scanner::move(int32_t x, int32_t z)
+{
+  // Number of motors
+  size_t n = 2;
+
+  // Motors
+  Motorized* motors[n] = {&_x_axis, &_z_axis};
+
+  // Distances to move
+  int32_t distances[n] = {x, z};
+
+  parallel_move(motors, distances, n);
+}
+
+void Scanner::rotate(int32_t degree)
+{
+  size_t n = 1;
+
+  Motorized* motors[n] = {&_scanner_rotor};
+
+  int32_t distances[n] = {degree};
+
+  parallel_move(motors, distances, n);
+}
+
+void Scanner::move_and_rotate(int32_t x, int32_t z, int32_t degree)
+{ 
+  size_t n = 3;
+
+  Motorized* motors[n] = {&_x_axis, &_z_axis, &_scanner_rotor};
+
+  int32_t distances[n] = {x, z, degree};
+
+  parallel_move(motors, distances, n);
 }
 
 void Scanner::move_to_zero()
@@ -241,34 +268,44 @@ void Scanner::move_to_zero()
   }
 }
 
+void Scanner::table_rotate(int32_t degree)
+{ 
+    size_t n = 1;
+
+    Motorized* motors[n] = {&_table_rotor};
+
+    int32_t distances[n] = {degree};
+
+    parallel_move(motors, distances, n);
+}
+
+void Scanner::move_and_rotate_table(int32_t x, int32_t z, int32_t degree)
+{ 
+    size_t n = 3;
+
+    Motorized* motors[n] = {&_x_axis, &_z_axis, &_table_rotor};
+
+    int32_t distances[n] = {x, z, degree};
+
+    parallel_move(motors, distances, n);
+}
+
+void Scanner::move_and_rotate_scanner_and_table(int32_t x, int32_t z, int32_t s_degree, int32_t t_degree)
+{ 
+    size_t n = 4;
+
+    Motorized* motors[n] = {&_x_axis, &_z_axis, &_scanner_rotor, &_table_rotor};
+
+    int32_t distances[n] = {x, z, s_degree, t_degree};
+
+    parallel_move(motors, distances, n);
+}
+
+#if DEPRECATED
 void Scanner::rotate_to_zero()
 {
   // Return to initial position
   rotate(-(_scanner_rotor._accumulated_rotation % 18));
-}
-
-void Scanner::table_rotate(int32_t degree)
-{
-    // Accumulate rotations to return to zero position
-    _table_rotor._accumulated_rotation += degree;
-
-    // The same as move function
-    const size_t PERIOD = ((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * 10));
-
-    uint32_t timer;
-
-    chose_dir(degree, _table_rotor._motor);
-
-    uint32_t steps = degree * _table_rotor._motor._STEPS_IN_FULL_ROTATION;
-
-    while (steps--)
-    {
-      if ((micros() - timer >= PERIOD) && steps)
-      {
-        _table_rotor._motor.step();
-        timer = micros();
-      }
-    }
 }
 
 void Scanner::table_rotate_to_zero()
@@ -277,100 +314,4 @@ void Scanner::table_rotate_to_zero()
   rotate(-_table_rotor._accumulated_rotation % 18);
 }
 
-void Scanner::move_and_rotate_table(int32_t x, int32_t z, int32_t degree)
-{
-    _table_rotor._accumulated_rotation += degree;
-
-    // The same as move function
-    const size_t PERIOD = ((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * 60));
-    const size_t TABLE_PERIOD = ((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * 10));
-
-    uint32_t x_timer;
-    uint32_t z_timer;
-    uint32_t degree_timer;
-
-    chose_dir(x, _x_axis._motor);
-    chose_dir(z, _z_axis._motor);
-    chose_dir(degree, _table_rotor._motor);
-
-    uint32_t x_steps = x * _x_axis._STEPS_IN_MM;
-    uint32_t z_steps = z * _z_axis._STEPS_IN_MM;
-    /* TODO: remove all magic numbers!!!*/
-    uint32_t degree_steps = degree * _table_rotor._motor._STEPS_IN_FULL_ROTATION;
-
-    while (x_steps || z_steps || degree_steps)
-    {
-      if ((micros() - x_timer >= PERIOD) && x_steps)
-      {
-        _x_axis._motor.step();
-        --x_steps;
-        x_timer = micros();
-      }
-      if ((micros() - z_timer >= PERIOD) && z_steps)
-      {
-        _z_axis._motor.step();
-        --z_steps;
-        z_timer = micros();
-      }
-      if ((micros() - degree_timer >= TABLE_PERIOD) && degree_steps)
-      {
-        _table_rotor._motor.step();
-        --degree_steps;
-        degree_timer = micros();
-      }
-    }
-}
-
-void Scanner::move_and_rotate_scanner_and_table(int32_t x, int32_t z, int32_t s_degree, int32_t t_degree)
-{
-    _scanner_rotor._accumulated_rotation += s_degree;
-    _table_rotor._accumulated_rotation += t_degree;
-
-    // The same as move function
-    const size_t PERIOD = ((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * 60));
-    const size_t TABLE_PERIOD = ((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * 10));
-
-    uint32_t x_timer;
-    uint32_t z_timer;
-    uint32_t s_degree_timer;
-    uint32_t t_degree_timer;
-
-    chose_dir(x, _x_axis._motor);
-    chose_dir(z, _z_axis._motor);
-    chose_dir(s_degree, _table_rotor._motor);
-    chose_dir(t_degree, _table_rotor._motor);
-
-    uint32_t x_steps = x * _x_axis._STEPS_IN_MM;
-    uint32_t z_steps = z * _z_axis._STEPS_IN_MM;
-    /* TODO: remove all magic numbers!!!*/
-    uint32_t s_degree_steps = s_degree * 33152;
-    uint32_t t_degree_steps = t_degree * _table_rotor._motor._STEPS_IN_FULL_ROTATION;
-
-    while (x_steps || z_steps || t_degree_steps || s_degree_steps)
-    {
-      if ((micros() - x_timer >= PERIOD) && x_steps)
-      {
-        _x_axis._motor.step();
-        --x_steps;
-        x_timer = micros();
-      }
-      if ((micros() - z_timer >= PERIOD) && z_steps)
-      {
-        _z_axis._motor.step();
-        --z_steps;
-        z_timer = micros();
-      }
-      if ((micros() - s_degree_timer >= PERIOD) && s_degree_steps)
-      {
-        _scanner_rotor._motor.step();
-        --s_degree_steps;
-        s_degree_timer = micros();
-      }
-      if ((micros() - t_degree_timer >= TABLE_PERIOD) && t_degree_steps)
-      {
-        _table_rotor._motor.step();
-        --t_degree_steps;
-        t_degree_timer = micros();
-      }
-    }
-}
+#endif

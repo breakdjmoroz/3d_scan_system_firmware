@@ -33,25 +33,16 @@ void setup()
 {
   scanner.init();
 
-  scanner.move(300, 750);
-  delay(100);
-  scanner.rotate(-2);
-  delay(100);
-  scanner.table_rotate(475);
-  delay(100);
-  scanner.move(0, -100);
-  delay(100);
-  scanner.rotate(-2);
-  delay(100);
-  scanner.table_rotate(-475);
-  delay(100);
-  scanner.move(-50, -50);
-  delay(100);
-
-  #if 1
-  scanner.rotate_to_zero();
-  scanner.move_to_zero();
-  #endif
+  scanner.move(100, 100);
+  delay(500);
+  scanner.move_and_rotate(50, 50, 64);
+  delay(500);
+  scanner.move_and_rotate(50, -50, -64);
+  delay(500);
+  scanner.move_and_rotate(-50, -50, -64);
+  delay(500);
+  scanner.move_and_rotate(-50, 50, 64);
+  delay(500);
 }
 
 void loop()
