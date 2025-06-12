@@ -21,7 +21,7 @@ enum STEP_MODE
 class Motor
 {
 public:
-    const STEP_MODE _STEP_MODE;
+    const STEP_MODE _STEPS_IN_FULL_ROTATION;
 
     Motor(size_t ena_pin, size_t dir_pin, size_t pul_pin, STEP_MODE step_mode);
 

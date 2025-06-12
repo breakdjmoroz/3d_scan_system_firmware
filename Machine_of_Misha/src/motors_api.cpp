@@ -26,7 +26,7 @@
 Motor::Motor(size_t ena_pin, size_t dir_pin, size_t pul_pin, STEP_MODE step_mode):
         _ena_pin(ena_pin), _dir_pin(dir_pin),
         _pul_pin(pul_pin), _direction(DIR_CLOCKWISE),
-        _STEP_MODE(step_mode) {};
+        _STEPS_IN_FULL_ROTATION(step_mode) {};
 
 void Motor::set_up()
 {

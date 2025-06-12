@@ -3,42 +3,61 @@
 #include "motors_api.h"
 #include "scanner.h"
 
-#define MOTOR_0_PUL_PIN           (13)  // Responsible for the motor's motion
-#define MOTOR_0_DIR_PIN           (12)  // Responsible for direction of the motor's motion
-#define MOTOR_0_ENA_PIN           (11)  // Responsible for enabling the motor
+#define MOTOR_X_PUL_PIN           (13)  // Responsible for the motor's motion
+#define MOTOR_X_DIR_PIN           (12)  // Responsible for direction of the motor's motion
+#define MOTOR_X_ENA_PIN           (11)  // Responsible for enabling the motor
 
-#define MOTOR_1_PUL_PIN           (10)
-#define MOTOR_1_DIR_PIN           (9)
-#define MOTOR_1_ENA_PIN           (8)
+#define MOTOR_Z_PUL_PIN           (10)
+#define MOTOR_Z_DIR_PIN           (9)
+#define MOTOR_Z_ENA_PIN           (8)
+
+#define MOTOR_S_PUL_PIN           (7)
+#define MOTOR_S_DIR_PIN           (6)
+#define MOTOR_S_ENA_PIN           (5)
+
+#define MOTOR_T_PUL_PIN           (A2)
+#define MOTOR_T_DIR_PIN           (A1)
+#define MOTOR_T_ENA_PIN           (A0)
 
 #define MOTOR_0_STOP_BUTTON_PIN   (3)   // Generate interrupt to stop the motion
 #define MOTOR_1_STOP_BUTTON_PIN   (2)
 
-Motor x_motor = {MOTOR_0_ENA_PIN, MOTOR_0_DIR_PIN, MOTOR_0_PUL_PIN, STEP_32};
-Motor z_motor = {MOTOR_1_ENA_PIN, MOTOR_1_DIR_PIN, MOTOR_1_PUL_PIN, STEP_32};
+Motor x_motor       = {MOTOR_X_ENA_PIN, MOTOR_X_DIR_PIN, MOTOR_X_PUL_PIN, STEP_32};
+Motor z_motor       = {MOTOR_Z_ENA_PIN, MOTOR_Z_DIR_PIN, MOTOR_Z_PUL_PIN, STEP_32};
+Motor scanner_motor = {MOTOR_S_ENA_PIN, MOTOR_S_DIR_PIN, MOTOR_S_PUL_PIN, STEP_32};
+Motor table_motor   = {MOTOR_T_ENA_PIN, MOTOR_T_DIR_PIN, MOTOR_T_PUL_PIN, STEP_32};
 
-Scanner scanner = {x_motor, z_motor, MOTOR_0_STOP_BUTTON_PIN, MOTOR_1_STOP_BUTTON_PIN};
-
-size_t iterations = 2;
-bool is_running = true;
+Scanner scanner = {x_motor, z_motor, scanner_motor, table_motor, MOTOR_0_STOP_BUTTON_PIN, MOTOR_1_STOP_BUTTON_PIN};
 
 void setup()
 {
   scanner.init();
 
-  scanner.move(40, 40);
+  scanner.move(300, 750);
+  delay(100);
+  scanner.rotate(-2);
+  delay(100);
+  scanner.table_rotate(475);
+  delay(100);
+  scanner.move(0, -100);
+  delay(100);
+  scanner.rotate(-2);
+  delay(100);
+  scanner.table_rotate(-475);
+  delay(100);
+  scanner.move(-50, -50);
+  delay(100);
 
-  while (iterations--)
-  {
-    scanner.move(15, 0);
-    scanner.move(0, 15);
-    scanner.move(-15, 0);
-    scanner.move(0, -15);
-  }
-
+  #if 1
+  scanner.rotate_to_zero();
   scanner.move_to_zero();
+  #endif
 }
 
 void loop()
 {
+    #if 0
+    scanner.rotate(18);
+    delay(1000);
+    #endif
 }
