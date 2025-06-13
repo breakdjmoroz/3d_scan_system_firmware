@@ -23,22 +23,22 @@ public:
     void move_and_rotate_table(int32_t x, int32_t z, int32_t degree);
     void move_and_rotate_scanner_and_table(int32_t x, int32_t z, int32_t s_degree, int32_t degree);
 
-    #if DEPRECATED
-    void table_rotate_to_zero();
-
     void rotate_to_zero();
-    #endif
+    void table_rotate_to_zero();
 private:
     class Motorized
     {
     public:
-        virtual void init();
+        Motorized(Motor motor);
 
-        virtual void choose_direction(int32_t distance);
+        void init();
+        void move();
+        void choose_direction(int32_t distance);
+
         virtual uint32_t distance_to_steps(int32_t distance);
 
-        virtual void move();
-    private:
+    protected:
+        Motor _motor;
     };
 
     class Axis : public Motorized
@@ -46,15 +46,11 @@ private:
     public:
         Axis(Motor motor);
 
-        void init() override;
-        void move() override;
-
         uint32_t distance_to_steps(int32_t distance) override;
-        void choose_direction(int32_t distance) override;
 
     private:
         const size_t _STEPS_IN_MM;
-        Motor _motor;
+        int64_t _current_position;
     };
 
     class Rotor : public Motorized
@@ -62,16 +58,16 @@ private:
     public:
         Rotor(Motor motor);
 
-        void init() override;
-        void move() override;
-
         uint32_t distance_to_steps(int32_t distance) override;
-        void choose_direction(int32_t distance) override;
+
+        void accumulate_rotations(int32_t distance);
+        int64_t distance_to_zero();
 
     private:
         const size_t _STEPS_IN_DEGREE;
         int64_t _accumulated_rotation;
-        Motor _motor;
+
+        void skip_full_rotations();
     };
 
     Axis _x_axis;

@@ -42,7 +42,17 @@ void setup()
   scanner.move_and_rotate(-50, -50, -64);
   delay(500);
   scanner.move_and_rotate(-50, 50, 64);
+  delay(1000);
+
+  scanner.move_and_rotate(50, 50, 70);
   delay(500);
+  scanner.rotate_to_zero();
+  delay(500);
+  scanner.move_and_rotate(-50, -70, 55);
+  delay(500);
+  scanner.rotate_to_zero();
+  delay(500);
+  scanner.move_to_zero();
 }
 
 void loop()

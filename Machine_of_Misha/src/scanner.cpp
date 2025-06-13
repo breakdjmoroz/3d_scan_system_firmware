@@ -27,29 +27,21 @@ void _z_stop_handler()
   interrupts();
 }
 
-Scanner::Axis::Axis(Motor motor):
-    _motor(motor),
-    _STEPS_IN_MM(motor._STEPS_IN_FULL_ROTATION / MM_IN_FULL_ROTATION) {};
+Scanner::Motorized::Motorized(Motor motor): _motor(motor) {};
 
-void Scanner::Axis::init()
+void Scanner::Motorized::init()
 {
   // Enable and set up motor
   _motor.enable();
   _motor.set_up();
 }
 
-void Scanner::Axis::move()
+void Scanner::Motorized::move()
 {
   _motor.step();
 }
 
-uint32_t Scanner::Axis::distance_to_steps(int32_t distance)
-{
-    // Convert coordinates into steps
-    return abs(distance) * _STEPS_IN_MM;
-}
-
-void Scanner::Axis::choose_direction(int32_t coordinate)
+void Scanner::Motorized::choose_direction(int32_t coordinate)
 {
   // Chose direction of rotation
   if (coordinate < 0)
@@ -62,22 +54,19 @@ void Scanner::Axis::choose_direction(int32_t coordinate)
   }
 }
 
+Scanner::Axis::Axis(Motor motor): Motorized(motor),
+    _STEPS_IN_MM(motor._STEPS_IN_FULL_ROTATION / MM_IN_FULL_ROTATION) {};
+
+uint32_t Scanner::Axis::distance_to_steps(int32_t distance)
+{
+    // Convert coordinates into steps
+    return abs(distance) * _STEPS_IN_MM;
+}
+
 Scanner::Rotor::Rotor(Motor motor):
-    _motor(motor),
+    Motorized(motor),
     _STEPS_IN_DEGREE(motor._STEPS_IN_FULL_ROTATION / DEGREE_IN_FULL_ROTATION),
     _accumulated_rotation(0) {};
-
-void Scanner::Rotor::init()
-{
-  // Enable and set up motor
-  _motor.enable();
-  _motor.set_up();
-}
-
-void Scanner::Rotor::move()
-{
-  _motor.step();
-}
 
 uint32_t Scanner::Rotor::distance_to_steps(int32_t distance)
 {
@@ -86,17 +75,25 @@ uint32_t Scanner::Rotor::distance_to_steps(int32_t distance)
     return abs(distance) * 33152 / 128;
 }
 
-void Scanner::Rotor::choose_direction(int32_t coordinate)
+void Scanner::Rotor::accumulate_rotations(int32_t distance)
 {
-  // Chose direction of rotation
-  if (coordinate < 0)
-  {
-    _motor.counterclockwise_dir();
-  }
-  else if (coordinate > 0)
-  {
-    _motor.clockwise_dir();
-  }
+  // Accumulate rotations to compute distance to zero
+  _accumulated_rotation += distance;
+}
+
+void Scanner::Rotor::skip_full_rotations()
+{
+  // Find distance to zero inside boundaries of the cycle
+  /* TODO: remove magic numbers!!! */
+  _accumulated_rotation = _accumulated_rotation % 128;
+}
+
+int64_t Scanner::Rotor::distance_to_zero()
+{
+  // Find distance to zero position
+  skip_full_rotations();
+  /* TODO: remove magic numbers!!! */
+  return (abs(_accumulated_rotation) > 64)? 128 - _accumulated_rotation : -_accumulated_rotation;
 }
 
 Scanner::Scanner(Motor x_motor, Motor z_motor, Motor scanner_motor, Motor table_motor,
@@ -122,10 +119,8 @@ void Scanner::init()
   attachInterrupt(digitalPinToInterrupt(_x_stop_pin), _x_stop_handler, FALLING);
   attachInterrupt(digitalPinToInterrupt(_z_stop_pin), _z_stop_handler, FALLING);
   
-  move_to_zero();
-  #if DEPRECATED
   rotate_to_zero();
-  #endif
+  move_to_zero();
 }
 
 void Scanner::parallel_move(Motorized* motors[], int32_t distanses[], size_t motors_number)
@@ -197,6 +192,8 @@ void Scanner::rotate(int32_t degree)
 
   int32_t distances[n] = {degree};
 
+  // Accumulate rotations from zero position
+  _scanner_rotor.accumulate_rotations(degree);
   parallel_move(motors, distances, n);
 }
 
@@ -208,6 +205,7 @@ void Scanner::move_and_rotate(int32_t x, int32_t z, int32_t degree)
 
   int32_t distances[n] = {x, z, degree};
 
+  _scanner_rotor.accumulate_rotations(degree);
   parallel_move(motors, distances, n);
 }
 
@@ -276,6 +274,7 @@ void Scanner::table_rotate(int32_t degree)
 
     int32_t distances[n] = {degree};
 
+    _table_rotor.accumulate_rotations(degree);
     parallel_move(motors, distances, n);
 }
 
@@ -287,6 +286,7 @@ void Scanner::move_and_rotate_table(int32_t x, int32_t z, int32_t degree)
 
     int32_t distances[n] = {x, z, degree};
 
+    _table_rotor.accumulate_rotations(degree);
     parallel_move(motors, distances, n);
 }
 
@@ -298,20 +298,19 @@ void Scanner::move_and_rotate_scanner_and_table(int32_t x, int32_t z, int32_t s_
 
     int32_t distances[n] = {x, z, s_degree, t_degree};
 
+    _scanner_rotor.accumulate_rotations(s_degree);
+    _table_rotor.accumulate_rotations(t_degree);
     parallel_move(motors, distances, n);
 }
 
-#if DEPRECATED
 void Scanner::rotate_to_zero()
 {
   // Return to initial position
-  rotate(-(_scanner_rotor._accumulated_rotation % 18));
+  rotate(_scanner_rotor.distance_to_zero());
 }
 
 void Scanner::table_rotate_to_zero()
 {
   // Return to initial position
-  rotate(-_table_rotor._accumulated_rotation % 18);
+  rotate(_table_rotor.distance_to_zero());
 }
-
-#endif
