@@ -5,6 +5,9 @@
 
 #include "motors_api.h"
 
+#define DEFAULT_AXIS_SPEED  (30)    // mm/sec
+#define DEFAULT_ROTOR_SPEED (10)    // degrees_in_step/sec
+
 enum STEP_SCALER
 {
     SCALER_128 = 128,
@@ -44,7 +47,7 @@ private:
     class Motorized
     {
     public:
-        Motorized(Motor motor);
+        Motorized(Motor motor, size_t speed);
 
         // Neccessary initial function
         void init();
@@ -55,28 +58,37 @@ private:
         // Choose direction of the motor's rotation
         void choose_direction(int32_t distance);
 
-        // Convert distance (mm or degrees or smth else) to steps
+        // Return period used in motion functions
+        size_t current_speed_period();
+
+        // Convert distance (mm or degrees) to steps
         virtual uint32_t distance_to_steps(int32_t distance);
 
     protected:
         Motor _motor;
+        size_t _speed;
+
+        // Convert speed to period
+        virtual size_t speed_to_period(size_t speed);
     };
 
     class Axis : public Motorized
     {
     public:
-        Axis(Motor motor);
+        Axis(Motor motor, size_t speed = DEFAULT_AXIS_SPEED);
 
         uint32_t distance_to_steps(int32_t distance) override;
 
     private:
         const size_t _STEPS_IN_MM;
+
+        size_t speed_to_period(size_t speed) override;
     };
 
     class Rotor : public Motorized
     {
     public:
-        Rotor(Motor motor, STEP_SCALER step_scaler);
+        Rotor(Motor motor, STEP_SCALER step_scaler, size_t speed = DEFAULT_ROTOR_SPEED);
 
         uint32_t distance_to_steps(int32_t distance) override;
 
@@ -91,6 +103,8 @@ private:
         const size_t _DEGREES_IN_STEP;
         const STEP_SCALER _STEP_SCALER;
         int64_t _accumulated_rotation;
+
+        size_t speed_to_period(size_t speed) override;
 
         // Cut off unneccessary rotations
         void skip_full_rotations();

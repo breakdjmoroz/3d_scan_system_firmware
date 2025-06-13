@@ -17,6 +17,7 @@ enum STEP_MODE
     STEP_16   = 3200,
     STEP_32   = 6400,
     STEP_NEMA = 33152,      // Step of NEMA motor used in scanner rotor
+    STEP_57HS100 = 25600,   // Step of 57HS100 motor used in table rotor
 };
 
 class Motor

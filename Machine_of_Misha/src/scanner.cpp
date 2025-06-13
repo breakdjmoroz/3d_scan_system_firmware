@@ -24,7 +24,7 @@ void _z_stop_handler()
   interrupts();
 }
 
-Scanner::Motorized::Motorized(Motor motor): _motor(motor) {};
+Scanner::Motorized::Motorized(Motor motor, size_t speed): _motor(motor), _speed(speed) {};
 
 void Scanner::Motorized::init()
 {
@@ -51,7 +51,12 @@ void Scanner::Motorized::choose_direction(int32_t coordinate)
   }
 }
 
-Scanner::Axis::Axis(Motor motor): Motorized(motor),
+size_t Scanner::Motorized::current_speed_period()
+{
+  return speed_to_period(_speed);
+}
+
+Scanner::Axis::Axis(Motor motor, size_t speed = DEFAULT_AXIS_SPEED): Motorized(motor, speed),
     _STEPS_IN_MM(motor._STEPS_IN_FULL_ROTATION / MM_IN_FULL_ROTATION) {};
 
 uint32_t Scanner::Axis::distance_to_steps(int32_t distance)
@@ -60,8 +65,14 @@ uint32_t Scanner::Axis::distance_to_steps(int32_t distance)
     return abs(distance) * _STEPS_IN_MM;
 }
 
-Scanner::Rotor::Rotor(Motor motor, STEP_SCALER step_scaler):
-    Motorized(motor),
+size_t Scanner::Axis::speed_to_period(size_t speed)
+{
+  // Convert speed in mm/sec to period in usec
+  return USEC_IN_SEC / (speed * _STEPS_IN_MM);
+}
+
+Scanner::Rotor::Rotor(Motor motor, STEP_SCALER step_scaler, size_t speed = DEFAULT_ROTOR_SPEED):
+    Motorized(motor, speed),
     _DEGREES_IN_STEP(motor._STEPS_IN_FULL_ROTATION / step_scaler),
     _STEP_SCALER(step_scaler),
     _accumulated_rotation(0) {};
@@ -70,6 +81,12 @@ uint32_t Scanner::Rotor::distance_to_steps(int32_t distance)
 {
     // Convert coordinates into steps
     return abs(distance) * _DEGREES_IN_STEP;
+}
+
+size_t Scanner::Rotor::speed_to_period(size_t speed)
+{
+  // Convert speed in degrees_in_step/sec to period in usec
+  return USEC_IN_SEC / (speed * _DEGREES_IN_STEP);
 }
 
 void Scanner::Rotor::accumulate_rotations(int32_t distance)
@@ -137,7 +154,11 @@ void Scanner::parallel_move(Motorized* motors[], int32_t distanses[], size_t mot
   }
 
   // Time between steps. Influence on speed
-  const size_t PERIOD = ((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * 30));
+  size_t periods[motors_number] = {};
+  for (size_t i = 0; i < motors_number; ++i)
+  {
+    periods[i] = motors[i]->current_speed_period();
+  }
 
   // Timers to speed control
   uint32_t timers[motors_number] = {};
@@ -153,7 +174,7 @@ void Scanner::parallel_move(Motorized* motors[], int32_t distanses[], size_t mot
     for (size_t i = 0; i < motors_number; ++i)
     {
       // Move motors
-      if ((micros() - timers[i] >= PERIOD) && steps[i])
+      if ((micros() - timers[i] >= periods[i]) && steps[i])
       {
         motors[i]->move();
 
