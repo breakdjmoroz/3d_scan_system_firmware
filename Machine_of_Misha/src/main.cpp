@@ -24,10 +24,11 @@
 
 Motor x_motor       = {MOTOR_X_ENA_PIN, MOTOR_X_DIR_PIN, MOTOR_X_PUL_PIN, STEP_32};
 Motor z_motor       = {MOTOR_Z_ENA_PIN, MOTOR_Z_DIR_PIN, MOTOR_Z_PUL_PIN, STEP_32};
-Motor scanner_motor = {MOTOR_S_ENA_PIN, MOTOR_S_DIR_PIN, MOTOR_S_PUL_PIN, STEP_32};
-Motor table_motor   = {MOTOR_T_ENA_PIN, MOTOR_T_DIR_PIN, MOTOR_T_PUL_PIN, STEP_32};
+Motor scanner_motor = {MOTOR_S_ENA_PIN, MOTOR_S_DIR_PIN, MOTOR_S_PUL_PIN, STEP_NEMA};
+Motor table_motor   = {MOTOR_T_ENA_PIN, MOTOR_T_DIR_PIN, MOTOR_T_PUL_PIN, STEP_NEMA};
 
-Scanner scanner = {x_motor, z_motor, scanner_motor, table_motor, MOTOR_0_STOP_BUTTON_PIN, MOTOR_1_STOP_BUTTON_PIN};
+Scanner scanner = {x_motor, z_motor, scanner_motor, table_motor,
+  SCALER_128, SCALER_128, MOTOR_0_STOP_BUTTON_PIN, MOTOR_1_STOP_BUTTON_PIN};
 
 void setup()
 {
@@ -35,6 +36,8 @@ void setup()
 
   scanner.move(100, 100);
   delay(500);
+
+  #if 0
   scanner.move_and_rotate(50, 50, 64);
   delay(500);
   scanner.move_and_rotate(50, -50, -64);
@@ -43,12 +46,15 @@ void setup()
   delay(500);
   scanner.move_and_rotate(-50, 50, 64);
   delay(1000);
+  #endif
 
-  scanner.move_and_rotate(50, 50, 70);
+  scanner.move_and_rotate_scanner_and_table(50, 50, 70, 70);
   delay(500);
   scanner.rotate_to_zero();
   delay(500);
-  scanner.move_and_rotate(-50, -70, 55);
+  scanner.table_rotate_to_zero();
+  delay(500);
+  scanner.move_and_rotate(-50, -50, 55);
   delay(500);
   scanner.rotate_to_zero();
   delay(500);

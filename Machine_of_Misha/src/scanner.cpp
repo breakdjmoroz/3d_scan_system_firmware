@@ -5,9 +5,6 @@
 // Distance, that the axis has passed after full rotation of the motor, mm
 #define MM_IN_FULL_ROTATION (10)
 
-// Angel, that rotor has passed after full rotation of the motor, degrees
-#define DEGREE_IN_FULL_ROTATION (360)
-
 // Interrupt flags becoming true when stop button pushed
 volatile bool _is_x_stop = false;
 volatile bool _is_z_stop = false;
@@ -63,16 +60,16 @@ uint32_t Scanner::Axis::distance_to_steps(int32_t distance)
     return abs(distance) * _STEPS_IN_MM;
 }
 
-Scanner::Rotor::Rotor(Motor motor):
+Scanner::Rotor::Rotor(Motor motor, STEP_SCALER step_scaler):
     Motorized(motor),
-    _STEPS_IN_DEGREE(motor._STEPS_IN_FULL_ROTATION / DEGREE_IN_FULL_ROTATION),
+    _DEGREES_IN_STEP(motor._STEPS_IN_FULL_ROTATION / step_scaler),
+    _STEP_SCALER(step_scaler),
     _accumulated_rotation(0) {};
 
 uint32_t Scanner::Rotor::distance_to_steps(int32_t distance)
 {
     // Convert coordinates into steps
-    /* TODO: remove magic numbers!!! */
-    return abs(distance) * 33152 / 128;
+    return abs(distance) * _DEGREES_IN_STEP;
 }
 
 void Scanner::Rotor::accumulate_rotations(int32_t distance)
@@ -84,23 +81,25 @@ void Scanner::Rotor::accumulate_rotations(int32_t distance)
 void Scanner::Rotor::skip_full_rotations()
 {
   // Find distance to zero inside boundaries of the cycle
-  /* TODO: remove magic numbers!!! */
-  _accumulated_rotation = _accumulated_rotation % 128;
+  _accumulated_rotation = _accumulated_rotation % _STEP_SCALER;
 }
 
 int64_t Scanner::Rotor::distance_to_zero()
 {
   // Find distance to zero position
   skip_full_rotations();
-  /* TODO: remove magic numbers!!! */
-  return (abs(_accumulated_rotation) > 64)? 128 - _accumulated_rotation : -_accumulated_rotation;
+  // Choose minimal distance
+  return (abs(_accumulated_rotation) > _STEP_SCALER / 2)?
+    _STEP_SCALER - _accumulated_rotation : -_accumulated_rotation;
 }
 
 Scanner::Scanner(Motor x_motor, Motor z_motor, Motor scanner_motor, Motor table_motor,
+  STEP_SCALER scanner_step_scaler, STEP_SCALER table_step_scaler,
   size_t x_stop_pin, size_t z_stop_pin) :
   _x_stop_pin(x_stop_pin), _z_stop_pin(z_stop_pin),
   _x_axis(Axis(x_motor)), _z_axis(Axis(z_motor)),
-  _scanner_rotor(Rotor(scanner_motor)), _table_rotor(Rotor(table_motor)) {};
+  _scanner_rotor(Rotor(scanner_motor, scanner_step_scaler)),
+  _table_rotor(Rotor(table_motor, table_step_scaler)) {};
 
 void Scanner::init()
 {
@@ -115,7 +114,6 @@ void Scanner::init()
   pinMode(_z_stop_pin, INPUT_PULLUP);
 
   // Attach interrupts
-  // Pin - 2 = number of interrupt channel
   attachInterrupt(digitalPinToInterrupt(_x_stop_pin), _x_stop_handler, FALLING);
   attachInterrupt(digitalPinToInterrupt(_z_stop_pin), _z_stop_handler, FALLING);
   
@@ -139,7 +137,7 @@ void Scanner::parallel_move(Motorized* motors[], int32_t distanses[], size_t mot
   }
 
   // Time between steps. Influence on speed
-  const size_t PERIOD = ((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * 60));
+  const size_t PERIOD = ((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * 30));
 
   // Timers to speed control
   uint32_t timers[motors_number] = {};
@@ -312,5 +310,5 @@ void Scanner::rotate_to_zero()
 void Scanner::table_rotate_to_zero()
 {
   // Return to initial position
-  rotate(_table_rotor.distance_to_zero());
+  table_rotate(_table_rotor.distance_to_zero());
 }
