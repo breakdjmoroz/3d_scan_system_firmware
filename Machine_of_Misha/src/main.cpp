@@ -30,50 +30,46 @@ Motor table_motor   = {MOTOR_T_ENA_PIN, MOTOR_T_DIR_PIN, MOTOR_T_PUL_PIN, STEP_5
 Scanner scanner = {x_motor, z_motor, scanner_motor, table_motor,
   SCALER_128, SCALER_128, MOTOR_0_STOP_BUTTON_PIN, MOTOR_1_STOP_BUTTON_PIN};
 
-void setup()
+void scan_program()
 {
+  // Prologue
   scanner.init();
 
-  scanner.move(100, 100);
-  delay(500);
+  // Go to the table
+  scanner.move(300, 700);
 
-  #if 0
-  scanner.move_and_rotate(50, 50, 64);
-  delay(500);
-  scanner.move_and_rotate(50, -50, -64);
-  delay(500);
-  scanner.move_and_rotate(-50, -50, -64);
-  delay(500);
-  scanner.move_and_rotate(-50, 50, 64);
-  delay(1000);
-  #endif
+  // Full rotation of the table
+  scanner.table_rotate(128);
 
-  #if 0
-  scanner.move_and_rotate_scanner_and_table(50, 50, 70, 70);
-  delay(500);
+  // Go up and continue to scan
+  scanner.move_and_rotate(0, -86, -7);
+
+  // Full rotation of the table
+  scanner.table_rotate(128);
+
+  // Go up and continue to scan
+  scanner.move_and_rotate(0, -86, -3);
+
+  // Full rotation of the table
+  scanner.table_rotate(128);
+
+  // Go to initial position
+  scanner.move_and_rotate(0, 86 * 2, 7 + 3);
+
+  // Full rotation of the table
+  scanner.table_rotate(128);
+
+  // Epilogue
   scanner.rotate_to_zero();
-  delay(500);
   scanner.table_rotate_to_zero();
-  delay(500);
-  scanner.move_and_rotate(-50, -50, 55);
-  delay(500);
-  scanner.rotate_to_zero();
-  delay(500);
-  #endif
-
-  #if 1
-  scanner.table_rotate(70);
-  delay(500);
-  scanner.table_rotate_to_zero();
-  #endif
-
   scanner.move_to_zero();
+}
+
+void setup()
+{
+  scan_program();
 }
 
 void loop()
 {
-    #if 0
-    scanner.rotate(18);
-    delay(1000);
-    #endif
 }
