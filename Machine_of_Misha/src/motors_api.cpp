@@ -100,12 +100,3 @@ void Motor::inverse_dir()
     _direction = !_direction;
     set_dir();
 }
-
-void Motor::rotate(size_t steps)
-{
-    while (steps--)
-    {
-        step();
-        delayMicroseconds(((USEC_IN_SEC * 10) / ((MAX_FREQUENCY / 100) * 60)));
-    }
-}

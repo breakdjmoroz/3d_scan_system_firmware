@@ -16,6 +16,7 @@ enum STEP_MODE
     STEP_8    = 1600,
     STEP_16   = 3200,
     STEP_32   = 6400,
+    STEP_NEMA = 33152,      // Step of NEMA motor used in scanner rotor
 };
 
 class Motor
@@ -31,7 +32,6 @@ public:
     void disable();
 
     void step();
-    void rotate(size_t steps);
 
     void clockwise_dir();
     void counterclockwise_dir();
