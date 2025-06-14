@@ -30,7 +30,7 @@ Motor table_motor   = {MOTOR_T_ENA_PIN, MOTOR_T_DIR_PIN, MOTOR_T_PUL_PIN, STEP_5
 Scanner scanner = {x_motor, z_motor, scanner_motor, table_motor,
   SCALER_128, SCALER_128, MOTOR_0_STOP_BUTTON_PIN, MOTOR_1_STOP_BUTTON_PIN};
 
-void scan_program()
+void scan_program_example()
 {
   // Prologue
   scanner.init();
@@ -65,9 +65,33 @@ void scan_program()
   scanner.move_to_zero();
 }
 
+void scan()
+{
+  // Prologue
+  scanner.init();
+
+  // Go to the table
+  // 360 mm - optimal distance for x axis
+  // 765 mm - maximum for z axis
+  scanner.move(360, 765);
+
+  // Rotate scanner down on 2,8125 * 5 = 14,0625 degree
+  scanner.rotate(-5);
+
+  delay(10000);
+  scanner.rotate_to_zero();
+
+  #if 0
+  // Epilogue
+  scanner.rotate_to_zero();
+  scanner.table_rotate_to_zero();
+  scanner.move_to_zero();
+  #endif
+}
+
 void setup()
 {
-  scan_program();
+  scan();
 }
 
 void loop()
