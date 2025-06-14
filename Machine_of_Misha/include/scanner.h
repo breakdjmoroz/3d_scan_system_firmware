@@ -5,8 +5,8 @@
 
 #include "motors_api.h"
 
-#define DEFAULT_AXIS_SPEED  (30)    // mm/sec
-#define DEFAULT_ROTOR_SPEED (10)    // degrees_in_step/sec
+#define DEFAULT_AXIS_SPEED  (15)    // mm/sec
+#define DEFAULT_ROTOR_SPEED (2)     // degrees_in_step/sec
 
 enum STEP_SCALER
 {
