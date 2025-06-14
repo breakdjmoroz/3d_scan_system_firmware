@@ -65,6 +65,46 @@ void scan_program_example()
   scanner.move_to_zero();
 }
 
+void closer_x(int32_t distance, size_t period)
+{
+  scanner.table_rotate(period / 4);
+  scanner.move_and_rotate_table(distance, 0, period / 4);
+  scanner.move_and_rotate_table(-distance, 0, period / 4);
+  scanner.table_rotate(period / 4);
+}
+
+void closer_x_and_rotate(int32_t distance, int32_t degree, size_t period)
+{
+  scanner.table_rotate(period / 4);
+  scanner.move_and_rotate_scanner_and_table(distance, 0, degree, period / 4);
+  scanner.move_and_rotate_scanner_and_table(-distance, 0, -degree, period / 4);
+  scanner.table_rotate(period / 4);
+}
+
+void closer_z(int32_t distance, size_t period)
+{
+  scanner.table_rotate(period / 4);
+  scanner.move_and_rotate_table(0, distance, period / 4);
+  scanner.move_and_rotate_table(0, -distance, period / 4);
+  scanner.table_rotate(period / 4);
+}
+
+void closer_xz(int32_t x_distance, int32_t z_distance, size_t period)
+{
+  scanner.table_rotate(period / 4);
+  scanner.move_and_rotate_table(x_distance, z_distance, period / 4);
+  scanner.move_and_rotate_table(-x_distance, -z_distance, period / 4);
+  scanner.table_rotate(period / 4);
+}
+
+void closer_xz_and_rotate(int32_t x_distance, int32_t z_distance, int32_t degree, size_t period)
+{
+  scanner.table_rotate(period / 4);
+  scanner.move_and_rotate_scanner_and_table(x_distance, z_distance, degree, period / 4);
+  scanner.move_and_rotate_scanner_and_table(-x_distance, -z_distance, -degree, period / 4);
+  scanner.table_rotate(period / 4);
+}
+
 void scan()
 {
   // Prologue
@@ -73,20 +113,51 @@ void scan()
   // Go to the table
   // 360 mm - optimal distance for x axis
   // 765 mm - maximum for z axis
-  scanner.move(360, 765);
 
-  // Rotate scanner down on 2,8125 * 5 = 14,0625 degree
-  scanner.rotate(-5);
+  // First iter
+  scanner.move_and_rotate(360, 760, -10);
 
-  delay(10000);
-  scanner.rotate_to_zero();
+  closer_x(50, 64);
+  closer_x(50, 64);
 
-  #if 0
-  // Epilogue
+  // Second iter
+  scanner.move_and_rotate(20, -80, -3);
+
+  closer_x(90, 64);
+
+  closer_xz(70, -80, 42);
+
+  closer_x_and_rotate(-40, 7, 22);
+
+  // Third iter
+  scanner.move_and_rotate(50, -80, -2);
+
+  closer_x(90, 14);
+  closer_x_and_rotate(40, 5, 20);
+  closer_xz_and_rotate(20, 60, 10, 20);
+  closer_x_and_rotate(40, 7, 10);
+  scanner.move(-50, 0);
+  closer_x(30, 64);
+  scanner.move(50, 0);
+
+  // Fourth iter
+  scanner.move_and_rotate(60, -50, -1);
+
+  closer_x_and_rotate(100, -2, 64);
+  scanner.move(-60, 0);
+  closer_x(50, 64);
+  scanner.move(60, 0);
+
+  // Fifth iter
+  scanner.move_and_rotate(70, -60, -4);
+
+  closer_x(40, 64);
+  closer_xz_and_rotate(-50, -20, -3, 128);
+
+  delay(5000);
   scanner.rotate_to_zero();
   scanner.table_rotate_to_zero();
   scanner.move_to_zero();
-  #endif
 }
 
 void setup()
